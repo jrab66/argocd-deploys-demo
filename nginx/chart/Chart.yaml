@@ -1,0 +1,16 @@
+apiVersion: v2
+name: nginx-example
+description: nginx chart using bitnami repo
+
+type: application
+
+# chart version
+version: 0.1.0
+
+# nginx version
+appVersion: 15.3.1
+
+dependencies:
+  - name: nginx
+    repository: https://charts.bitnami.com/bitnami
+    version: 15.3.1

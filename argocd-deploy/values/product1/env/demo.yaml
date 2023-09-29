@@ -1,0 +1,8 @@
+stage: demo
+applications:
+  # enabled: true
+  argo:
+    nginx:
+      enabled: true
+    nginx2:
+      enabled: false

@@ -1,0 +1,68 @@
+# Default values for argocd-deploy.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+environment: test
+# Used for folder that stores values files, search for .stack for refs
+stack: product1
+stage: demo
+
+applicationDefaults:
+  enabled: true
+
+  autoSync:
+    enabled: true
+  syncOptions:
+    - CreateNamespace=true
+  repo: git@github.com:jrab66 # git convention if used! #/product1/{{ .stack }}/{{ .appName }}
+  repoEnabled: false
+  repoType: helm
+  cluster: "in-cluster"
+  path: deploy/charts/{{ .appName }}
+  # NOTE: {{ .env }} will get rendered
+  branch: main
+  valueFiles:
+    - values.yaml
+    # - ../../values/{{ .env }}-values.yaml
+    # NOTE: {{ .env }} will get rendered
+  skipCrds: true
+  nameStyle: default #game, env-stage
+    
+applications:
+  # enabled: true
+  argo:
+    # enabled: true
+    argocd-deploy:
+      # enabled: true
+      repo: git@github.com/jrab66/argocd-deploys-demo
+      branch: main
+      path: argocd-deploy
+      cluster: in-cluster
+      namespace: argo
+      nameStyle: env-stage
+      # autoSync:
+      #   enabled: false
+      valueFiles:
+        - values.yaml
+        - values/{{ .stack }}/default.yaml
+        - values/{{ .stack }}/env/{{ .stage }}.yaml
+      # skipAppProjectCreation: true
+
+    nginx:
+      enabled: false
+      repo: git@github.com/jrab66/argocd-deploys-demo
+      branch: main
+      path: nginx/chart
+      valueFiles:
+        - values.yaml
+
+    nginx2:
+      enabled: false
+      repo: git@github.com/jrab66/argocd-deploys-demo
+      branch: main
+      namespace: nginx2
+      path: nginx/chart
+      valueFiles:
+        - values2.yaml
+        # - ../values/{{ .stack }}/stage/{{ .stage }}.yaml
+      # skipAppProjectCreation: true

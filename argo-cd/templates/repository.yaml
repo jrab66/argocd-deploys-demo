@@ -1,0 +1,15 @@
+{{- range $repo,$repoValues := .Values.repositories }}
+apiVersion: v1
+kind: Secret
+metadata:
+  name: {{ $repo }}
+  namespace: argo
+  labels:
+    argocd.argoproj.io/secret-type: repository
+stringData:
+  name: {{ $repo | lower }}
+  type: git
+  url: {{ $repoValues.url }}
+  sshPrivateKey: {{ $repoValues.sshPrivateKey | toString | quote }}
+---
+{{- end }}

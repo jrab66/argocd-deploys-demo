@@ -1,0 +1,150 @@
+# Empty dict which we use for AppProjects and Repos so they only get added 1x
+{{- $appProjects := default dict }}
+{{- $appRepos := default dict }}
+{{- $version := .Values.appProjects.version }}
+{{- $defaultStages := list (default .Values.stage .Values.applicationDefaults.stages) -}}
+{{- $env := .Values.environment -}}
+{{- $stack := .Values.stack -}}
+{{- $applicationDefaults := .Values.applicationDefaults }}
+{{- $applications := .Values.applications }}
+{{- $applicationDefaultRepo := .Values.applicationDefaults.repo }}
+{{- $values := .Values }}
+# Values for Repos
+{{- $clusterSecretStore := .Values.repos.clusterSecretStore }}
+{{- $externalSecret := .Values.repos.externalSecret }}
+
+{{- range $appGroupName,$appGroup := $applications }}
+{{- range $appName,$app := $appGroup }}
+{{- range $stage := (ternary $app.stages $defaultStages (hasKey $app "stages")) }}
+
+{{- $appRepo := tpl (default $applicationDefaultRepo $app.repo) (dict "stack" $stack "appGroupName" $appGroupName  "appName" $appName "Template" $.Template) }}
+
+{{- if (ternary $applications.enabled $applicationDefaults.enabled (hasKey $applications "enabled")) }}
+{{- if and (not (eq $appGroupName "enabled")) (ternary $appGroup.enabled $applicationDefaults.enabled (hasKey $appGroup "enabled")) }}
+{{- if and (not (eq $appName "enabled")) (ternary $app.enabled $applicationDefaults.enabled (hasKey $app "enabled")) }}
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  {{- if eq "game" (default $applicationDefaults.nameStyle $app.nameStyle) }}
+  name: {{ printf "%s-%s-%s-%s-%s" $env $values.publisher $values.game $stage $appName }}
+  {{- else if eq "env-stage" (default $applicationDefaults.nameStyle $app.nameStyle) }}
+  name: {{ printf "%s-%s-%s" $env $stage $appName }}
+  {{- else }}
+  name: {{ printf "%s-%s" $env $appName }}
+  {{- end }}
+  labels:
+spec:
+  destination:
+    name: {{ tpl (default $applicationDefaults.cluster $app.cluster) (dict "env" $env "Template" $.Template) }}
+    namespace: {{ tpl (default $appGroupName $app.namespace) (dict "stage" $stage "Template" $.Template) }}
+  source:
+    path: {{ tpl (default $applicationDefaults.path $app.path) (dict "appName" $appName "Template" $.Template) }}
+    repoURL: {{ $appRepo }}
+    targetRevision: {{ default $applicationDefaults.branch $app.branch }}
+    {{- if eq (default $applicationDefaults.repoType $app.repoType) "helm" }}
+    helm:
+      {{- if or (hasKey $applicationDefaults "skipCrds") (hasKey $app "skipCrds")  }}
+      skipCrds: {{ (default $applicationDefaults.skipCrds $app.skipCrds | toString) }} 
+      {{- end }}
+      valueFiles:
+        {{- range $valueFile := (default $applicationDefaults.valueFiles $app.valueFiles) }}
+        - {{ tpl $valueFile (dict "stage" $stage "stack" $stack "env" $env "Template" $.Template) }}
+        {{- end }}
+    {{- end }}
+    {{- if eq (default $applicationDefaults.repoType  $app.repoType) "git" }}
+    directory:
+      recurse: true
+      jsonnet: {}
+    {{- end }}
+  project: {{ $values.environment }}-{{ tpl $appGroupName (dict "stage" $stage "Template" $.Template) }}
+  syncPolicy: 
+    {{- if (dig "autoSync" "enabled" $applicationDefaults.autoSync.enabled $app)  }}
+    automated:
+      prune: true
+      selfHeal: true
+    {{- end }}
+    {{- with (default $applicationDefaults.syncOptions  $app.syncOptions) }}
+    syncOptions:
+      {{- toYaml . | nindent 6 }}
+    {{- end }}
+---
+{{- end }}
+{{- end }}
+{{- end }}
+
+{{- if $values.appProjects.enabled }}
+{{- if (ternary $applications.enabled $applicationDefaults.enabled (hasKey $applications "enabled")) }}
+{{- if and (not (eq $appGroupName "enabled")) (ternary $appGroup.enabled $applicationDefaults.enabled (hasKey $appGroup "enabled")) }}
+{{- if and (not (eq $appName "enabled")) (ternary $app.enabled $applicationDefaults.enabled (hasKey $app "enabled")) }}
+{{- if not (ternary $app.skipAppProjectCreation false (hasKey $app "skipAppProjectCreation")) }}
+{{- $appProject := tpl (default $appGroupName $app.project) (dict "stage" $stage "Template" $.Template) -}}
+{{- if not (hasKey $appProjects $appProject) }}
+{{- $_ := set $appProjects $appProject $appProject }}
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata: 
+ name: {{ $values.environment }}-{{ tpl $appGroupName (dict "stage" $stage "Template" $.Template) }}
+ namespace: argo
+spec:
+ description: {{ tpl $appGroupName (dict "stage" $stage "Template" $.Template) }}
+ sourceRepos:
+  - "*"
+ destinations:
+  - server: "*"
+    name: "*"
+    namespace: "*"
+ clusterResourceWhitelist:
+  - group: "*"
+    kind: "*"
+ namespaceResourceWhitelist:
+  - group: "*"
+    kind: "*"
+---
+{{- end }}
+{{- end }}
+{{- end }}
+{{- end }}
+{{- end }}
+{{- end }}
+
+{{- if $values.repos.enabled }}
+{{- if not (hasKey $appRepos $appRepo) }}
+{{- $_ := set $appRepos $appRepo $appRepo }}
+{{ $appRepoName := cat ($appRepo | replace "git@gitlab.com:" "" | replace "/" "-") "-repository" | replace " " "" }}
+apiVersion: external-secrets.io/v1alpha1
+kind: ExternalSecret
+metadata:
+  name: {{ $appRepoName }}
+  namespace: argo
+spec:
+  refreshInterval: 1m0s # set like this for ArgoCD diff
+  secretStoreRef:
+    kind: ClusterSecretStore
+    name: {{ $clusterSecretStore }}
+  target:
+    name: {{ $appRepoName }}
+    creationPolicy: Owner
+    template:
+      engineVersion: v2
+      metadata:
+        labels:
+          argocd.argoproj.io/secret-type: repository
+      data:
+        name: {{ $appRepoName | replace "-repository" "" }}
+        type: git
+        url: {{ $appRepo }}
+        sshPrivateKey: "{{ `{{ .sshPrivateKey }}` }}"
+  data:
+    - secretKey: sshPrivateKey
+      {{- with $externalSecret }}
+      remoteRef:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+---
+{{- end }}
+{{- end }}
+
+{{- end }}
+{{- end }}
+{{- end }}
+

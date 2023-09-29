@@ -1,0 +1,8 @@
+application:
+  name: nginx
+
+nginx:
+
+  fullnameOverride: "nginx"
+  cluster:
+    nodes: 1

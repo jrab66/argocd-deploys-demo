@@ -1,0 +1,3 @@
+Installed ArgoCD CRD's to release:
+
+# TODO: add to NOTES

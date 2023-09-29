@@ -1,0 +1,94 @@
+# Default values for argo-cd.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+environment: example
+
+
+# repositories:
+#   helm-github:
+#     type: git
+#     sshPrivateKey: |
+#       -----BEGIN OPENSSH PRIVATE KEY-----
+#       b3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAAAMwAAAAtzc2gtZW
+#       QyNTUxOQAAACA5ZZi6KEQoxvq1La5xv+nbx3/FLwtATY4Qz+yOPTolMQAAAJjPztAWz87Q
+#       FgAAAAtzc2gtZWQyNTUxOQAAACA5ZZi6KEQoxvq1La5xv+nbx3/FLwtATY4Qz+yOPTolMQ
+#       AAAEDi+/8Yl0gLKjQJ9a5TDWTj/Q/Ctid2h/iSwFMQ1jCHGzllmLooRCjG+rUtrnG/6dvH
+#       f8UvC0BNjhDP7I49OiUxAAAAFGpvc2UuYmFyYWhvbmFAYXJnb2NkAQ==
+#       -----END OPENSSH PRIVATE KEY-----
+#   #  "---REDACTED---"
+
+#     url: git@github.com:jrab66/argocd-deploys-demo
+
+argo-cd:
+  enabled: true
+  crds:
+    install: true
+  global:
+    # Added for Adding EKS Cluster
+    securityContext:
+      fsGroup: 999
+  dns: argocd.example.com
+  apiVersionOverrides:
+    # -- String to override apiVersion of certmanager resources rendered by this helm chart
+    certmanager: "cert-manager.io/v1"
+    # -- String to override apiVersion of ingresses rendered by this helm chart
+    ingress: "networking.k8s.io/v1"
+  server:
+    extraArgs:
+      - --insecure
+    service:
+      type: ClusterIP #NodePort
+    ingress:
+      enabled: falses
+
+  git:
+    branch: main
+
+  ## Argo Configs
+  configs:
+    credentialTemplates: 
+      # github-enterprise-creds-1:
+      #   url: https://github.com/argoproj
+      #   githubAppID: 1
+      #   githubAppInstallationID: 2
+      #   githubAppEnterpriseBaseUrl: https://ghe.example.com/api/v3
+      #   githubAppPrivateKey: |
+      #     -----BEGIN OPENSSH PRIVATE KEY-----
+      #     ...
+      #     -----END OPENSSH PRIVATE KEY-----
+      # https-creds:
+      #   url: https://github.com/argoproj
+      #   password: my-password
+      #   username: my-username
+      # ssh-creds:
+      #  url: git@github.com:argoproj-labs
+      #  sshPrivateKey: |
+      #    -----BEGIN OPENSSH PRIVATE KEY-----
+      #    ...
+      #    -----END OPENSSH PRIVATE KEY-----
+
+# for more production grade cases, the actual secret can be created and stored in some secret manager solution ( vault, googlesecrets,etc)
+      github:
+        url: git@github.com/jrab66
+        sshPrivateKey: |
+          -----BEGIN OPENSSH PRIVATE KEY-----
+          XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+          -----END OPENSSH PRIVATE KEY-----
+
+
+    # -- Annotations to be added to `configs.credentialTemplates` Secret
+    repositories: 
+    # istio-helm-repo:
+    #   url: https://storage.googleapis.com/istio-prerelease/daily-build/master-latest-daily/charts
+    #   name: istio.io
+    #   type: helm
+    # private-helm-repo:
+    #   url: https://my-private-chart-repo.internal
+    #   name: private-repo
+    #   type: helm
+    #   password: my-password
+    #   username: my-username
+      example-jrab-repo:
+        url: git@github.com:jrab66/argocd-deploys-demo
+        type: git

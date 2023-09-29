@@ -1,0 +1,39 @@
+# Default values for argocd-deploy.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+environment: example
+stack: example
+
+crds:
+  enabled: false
+
+# applicationDefaults:
+#   enabled: true
+#   environments: []
+#     # - example
+#   autoSync:
+#     enabled: true
+#   syncOptions:
+#     - CreateNamespace=true
+#   repo: git@gitlab.com:jrab66
+#   # NOTE: {{ .appGroupName }}, {{ .appName }} will get rendered
+#   cluster: "cnfc-{{ .env }}-01"
+#   # NOTE: {{ .env }} will get rendered
+#   branch: master
+#   valueFiles:
+#     - values.yaml
+#     - ../../values/{{ .env }}-values.yaml
+#     # NOTE: {{ .env }} will get rendered
+
+appProjects:
+  enabled: true
+  # version: ""
+
+applications: {}
+
+repos:
+  enabled: false
+  clusterSecretStore: ""
+  externalSecret:
+    key: ""

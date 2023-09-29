@@ -1,0 +1,41 @@
+# NOTE: creating a deep copy b/c we using unset, and don't want to run that on original Values.crds
+{{- $crds := (.Values.crds | deepCopy) }}
+{{- if .Values.crds.enabled }}
+# NOTE: temporary file to test, I'll move it into other templating, just need to finish testing first.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: {{ .Values.environment }}-bootstrap-crds
+  labels: {}
+spec:
+  project: {{ .Values.environment }}-bootstrap
+  sources:
+  {{- range $name, $crd := (unset $crds "enabled") }}
+  {{- if ternary $crd.enabled true (hasKey $crd "enabled") }}
+    - repoURL: {{ $crd.repo }}
+      targetRevision: {{ $crd.branch }}
+      path: {{ $crd.path }}
+      directory:
+        recurse: true
+        jsonnet: {}
+  {{- end }}
+  {{- end }}
+  destination:
+    namespace: bootstrap
+    name: {{ .Values.stack }}-{{ .Values.environment }}-01
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - ApplyOutOfSyncOnly=true
+      - Replace=true
+      - PruneLast=true
+  ignoreDifferences:
+    - group: apiextensions.k8s.io
+      kind: CustomResourceDefinition
+      jsonPointers:
+      - /spec/conversion/webhook/clientConfig/caBundle
+      - /spec/conversion/webhook/clientConfig/service/name
+      - /spec/conversion/webhook/clientConfig/service/namespace
+{{- end }}

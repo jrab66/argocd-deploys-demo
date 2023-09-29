@@ -1,0 +1,13 @@
+Install ArgoCD!
+
+To get "admin" password run:
+
+echo "Password: $(kubectl -n {{ .Release.Namespace }} get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d)"
+
+To port-forward:
+
+kubectl port-forward -n {{ .Release.Namespace }} svc/{{ .Release.Name }}-argocd-server 8443:443
+
+To get ip address:
+
+kubectl -n {{ .Release.Namespace }} get svc {{ .Release.Name }}-argocd-server --output jsonpath="{.status.loadBalancer.ingress[0].ip}"
