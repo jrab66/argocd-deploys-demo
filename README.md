@@ -2,6 +2,10 @@
 
 ArgoCD Managed via ArgoCD
 
+
+![inception meme :v](https://imgflip.com/i/80tp51)
+
+
 # prerequisites
 
 Before you begin with this demo, make sure you have the following:
