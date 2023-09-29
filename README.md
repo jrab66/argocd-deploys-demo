@@ -3,7 +3,7 @@
 ArgoCD Managed via ArgoCD
 
 
-![inception meme :v](https://imgflip.com/i/80tp51)
+![inception meme :v](https://i.imgflip.com/80tp51.jpg)
 
 
 # prerequisites
