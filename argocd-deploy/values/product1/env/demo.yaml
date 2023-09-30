@@ -5,4 +5,4 @@ applications:
     nginx:
       enabled: true
     nginx2:
-      enabled: false
+      enabled: true
